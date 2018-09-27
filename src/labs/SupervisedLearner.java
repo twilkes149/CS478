@@ -2,7 +2,7 @@
 // The contents of this file are distributed under the CC0 license.
 // See http://creativecommons.org/publicdomain/zero/1.0/
 // ----------------------------------------------------------------
-package Default;
+package labs;
 
 import java.util.ArrayList;
 import java.util.Scanner;

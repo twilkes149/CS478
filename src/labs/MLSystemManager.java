@@ -2,9 +2,8 @@
 // The contents of this file are distributed under the CC0 license.
 // See http://creativecommons.org/publicdomain/zero/1.0/
 // ----------------------------------------------------------------
-package Default;
+package labs;
 
-import java.util.ArrayList;
 import java.util.Random;
 import java.io.File;
 
@@ -16,7 +15,7 @@ public class MLSystemManager {
 	public SupervisedLearner getLearner(String model, Random rand) throws Exception
 	{
 		if (model.equals("baseline")) return new BaselineLearner();
-		// else if (model.equals("perceptron")) return new Perceptron(rand);
+		else if (model.equals("perceptron")) return new Perceptron(rand);
 		// else if (model.equals("neuralnet")) return new NeuralNet(rand);
 		// else if (model.equals("decisiontree")) return new DecisionTree();
 		// else if (model.equals("knn")) return new InstanceBasedLearner();
@@ -64,7 +63,7 @@ public class MLSystemManager {
 		{
 			System.out.println("Calculating accuracy on training set...");
 			Matrix features = new Matrix(data, 0, 0, data.rows(), data.cols() - 1);
-			Matrix labels = new Matrix(data, 0, data.cols() - 1, data.rows(), 1);
+			Matrix labels = new Matrix(data, 0, data.cols() - 1, data.rows(), 1);			
 			Matrix confusion = new Matrix();
 			double startTime = System.currentTimeMillis();
 			learner.train(features, labels);

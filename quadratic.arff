@@ -1,0 +1,11 @@
+@relation quadratic
+@attribute a1 real
+@attribute a2 real
+@attribute a3 real
+% @attribute a4 real
+@attribute class {0,1}
+@data
+-1,-1,1,0
+-1,1,1,1
+1,-1,1,1
+1,1,1,0
