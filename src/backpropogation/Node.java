@@ -8,6 +8,7 @@ public class Node {
 	private double[] weights;
 	private double[] inputs;
 	private double output;
+	private double error;
 	private double net;
 	private Random rand;
 	private double learningRate;
@@ -46,6 +47,22 @@ public class Node {
 		return this.output;
 	}
 	
+	public double getError() {
+		return this.error;
+	}
+	
+	public double getWeight(int index) {
+		return this.weights[index];
+	}
+	
+	public double[] getWeights() {
+		return this.weights;
+	}
+	
+	public int numWeights() {
+		return this.weights.length-1;//compensate for bias weight
+	}
+	
 	//the activation function
 	private double sigmoid(double net) {
 		return 1/(1+Math.exp(-1*net)); 
@@ -75,7 +92,36 @@ public class Node {
 		return this.output;
 	}
 	
-	public void updateWeight(int index, double output, double error) {
-		this.weights[index] = this.learningRate*output*error;
+	//calculate the error of this node if it is an output node 
+	public double calcError(double target) {
+		this.error = (target - this.output)*this.sigmoidPrime(this.net);
+		return this.error;
+	}
+	
+	public void setError(double e) {
+		this.error = e;
+	}
+	
+	//calculate the error or this node if it's a middle layer node
+	public double calcError(double[] nextNodeError, double[] weights) throws Exception {
+		if (nextNodeError.length != weights.length) {
+			throw new Exception("Erros and weights must be same length");
+		}
+		this.error = this.sigmoidPrime(this.net);
+		for (int i = 0; i < weights.length; i++) {
+			this.error *= weights[i]*nextNodeError[i];
+		}
+		
+		return this.error;
+	}
+	
+	/**
+	 * Updates one weight in this node
+	 * @param index the index of the weight to update
+	 * @param error the error of this node
+	 * @param prevNodeOutput the output of a previous layer node, connected through this weight
+	 */
+	public void updateWeight(int index, double error, double prevNodeOutput) {
+		this.weights[index] += this.learningRate*prevNodeOutput*error;//update the weight	
 	}
 }
