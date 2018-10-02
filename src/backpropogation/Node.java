@@ -51,6 +51,10 @@ public class Node {
 		return this.error;
 	}
 	
+	public double getNet() {
+		return this.net;
+	}
+	
 	public double getWeight(int index) {
 		return this.weights[index];
 	}
@@ -64,12 +68,12 @@ public class Node {
 	}
 	
 	//the activation function
-	private double sigmoid(double net) {
+	public double sigmoid(double net) {
 		return 1/(1+Math.exp(-1*net)); 
 	}
 	
 	//the derivative of the sigmoid function
-	private double sigmoidPrime(double net) {
+	public double sigmoidPrime(double net) {
 		return this.sigmoid(net) * (1 - this.sigmoid(net));
 	}
 	

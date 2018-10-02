@@ -6,8 +6,9 @@ public class Network {
 	private int numInputs;
 	private int numLayers;
 	private double learningRate;
+	private double[] inputs;
 	private Node[][] layers;
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	
 	/**
 	 * 
@@ -38,6 +39,7 @@ public class Network {
 	
 	//function to propogate the inputs through the network and get the final output
 	public double[] forwardPropogation(double[] inputs) {
+		this.inputs = inputs;//save for later reference in backprop
 		//runs all of the inputs through the network and calculates the output
 		double[] layerInput = inputs;
 		for (int i = 0; i < this.numLayers; i++) {//for each layer			
@@ -88,21 +90,51 @@ public class Network {
 		
 		//middle layer nodes
 		for (int layerIndex = outputIndex-1; layerIndex >= 0; layerIndex--) {//for each layer
+			if (Network.DEBUG) {
+				System.out.println("Updating layer[" + layerIndex + "]:");
+			}
 			for (int nodeIndex = 0; nodeIndex < this.layers[layerIndex].length; nodeIndex++) {//for each node on layer
+				if (Network.DEBUG) {
+					System.out.println("  Node[" + nodeIndex + "]:");
+				}
 				//calculate error of middle node
 				double error = 0;
-				for (int nextLayerNode = 0; nextLayerNode <= this.layers[layerIndex+1].length; nextLayerNode++) {//loop for each node in the next layer
+				if (Network.DEBUG) {
+					System.out.println("    Next layer length: " + this.layers[layerIndex+1].length);
+				}
+				for (int nextLayerNode = 0; nextLayerNode < this.layers[layerIndex+1].length; nextLayerNode++) {//loop for each node in the next layer
+					if (Network.DEBUG) {
+						System.out.println("      NL_Node[" + nextLayerNode + "]:");
+					}
 					error += this.layers[layerIndex+1][nextLayerNode].getError() * this.layers[layerIndex+1][nextLayerNode].getWeight(nodeIndex);//error of next node * weight connecting these two nodes
 				}
+				error *= this.layers[layerIndex][nodeIndex].sigmoidPrime(this.layers[layerIndex][nodeIndex].getNet());
 				this.layers[layerIndex][nodeIndex].setError(error);//set the error of this node to use later
+				if (Network.DEBUG) {
+					System.out.println("    Error: " + error);
+				}
 				
 				//update weights
 				for (int weightIndex = 0; weightIndex < this.layers[layerIndex][nodeIndex].numWeights(); weightIndex++) {//for all weights
-					double prevNodeOutput = this.layers[layerIndex-1][weightIndex].getOutput();
+					double prevNodeOutput=0;
+					if (layerIndex == 0) {//first layer
+						prevNodeOutput = this.inputs[weightIndex];//the prevNode was an input
+					}
+					else {
+						prevNodeOutput = this.layers[layerIndex-1][weightIndex].getOutput();//grab previous layer node output
+					}					
 					this.layers[layerIndex][nodeIndex].updateWeight(weightIndex, error, prevNodeOutput);
+				}
+				//update bias weight
+				int biasWeightIndex = this.layers[layerIndex][nodeIndex].numWeights();
+				this.layers[layerIndex][nodeIndex].updateWeight(biasWeightIndex, error, 1);
+				
+				if (Network.DEBUG) {
+					System.out.println("    New weights: " + Network.arrayToString(this.layers[layerIndex][nodeIndex].getWeights()));
 				}
 			}
 		}
+		System.out.println("Finished updating middle layer weights");
 	}
 	
 	public static String arrayToString(double[] array) {
@@ -131,16 +163,23 @@ public class Network {
 		Random rand = new Random(1);
 		int[] layers = {2,1};//nodes per layer
 		Network x = new Network(2, layers,rand,1);//10 layers
+		System.out.println("Network: " + x.toString());
 		
 		double[] inputs = {0,0};
-		System.out.println("Final output:" + Network.arrayToString(x.forwardPropogation(inputs)));
-		System.out.println("Network: " + x.toString());
+		System.out.println("Final output:" + Network.arrayToString(x.forwardPropogation(inputs)));		
 		double[] targets = {1};
 		try {
 			x.backPropogation(targets);
+		
+			inputs[1] = 1;//new input
+			targets[0] = 0;
+			System.out.println("Final output:" + Network.arrayToString(x.forwardPropogation(inputs)) + "\n\n\n");
+			x.backPropogation(targets);
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 	}
 }
