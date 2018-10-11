@@ -4,7 +4,9 @@
 // ----------------------------------------------------------------
 package labs;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -45,6 +47,18 @@ public class Matrix {
 			m_str_to_enum.add(that.m_str_to_enum.get(colStart + i));
 			m_enum_to_str.add(that.m_enum_to_str.get(colStart + i));
 		}
+	}
+	
+	//counts how many unique elements are in this array
+	public int countUnique() throws Exception {
+		if (this.cols() != 1) {//we only want to deal with 1 dimensional matrices
+			throw new Exception("Expected matrix to have one column");
+		}
+		Set<Integer> attributes = new HashSet<Integer>();
+		for (int i = 0; i < this.rows(); i++) {
+			attributes.add((int) this.get(i, 0));
+		}
+		return attributes.size();
 	}
 
 	// Adds a copy of the specified portion of that matrix to this matrix

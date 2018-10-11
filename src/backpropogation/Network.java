@@ -2,6 +2,8 @@ package backpropogation;
 
 import java.util.Random;
 
+import labs.Matrix;
+
 public class Network {
 	private int numInputs;
 	private int numLayers;
@@ -42,13 +44,16 @@ public class Network {
 		this.inputs = inputs;//save for later reference in backprop
 		//runs all of the inputs through the network and calculates the output
 		double[] layerInput = inputs;
+		double[] layerOutput;
 		for (int i = 0; i < this.numLayers; i++) {//for each layer			
-			double[] layerOutput = new double[this.layers[i].length];//array to hold output for each layer
+			layerOutput = new double[this.layers[i].length];//array to hold output for each layer
 			
 			for (int j = 0; j < this.layers[i].length; j++) {//for each node in layer
 				layerOutput[j] = this.layers[i][j].calcOutput(layerInput);//get output for this node
 			}
-			System.out.println("Layer["+i+"] output: " + Network.arrayToString(layerOutput));
+			//if (i == this.numLayers-1) {
+				//System.out.println("Layer["+i+"] output: " + Network.arrayToString(layerOutput));
+			//}			
 			layerInput = layerOutput;//set output of this layer as input to next layer
 		}
 		
@@ -57,31 +62,31 @@ public class Network {
 	
 	public void backPropogation(double[] targets) throws Exception {
 		//calculate output nodes
-		int outputIndex = this.layers.length-1;
+		int outputIndex = this.layers.length-1 < 0 ? 0 : this.layers.length-1;
 		
-		if (Network.DEBUG) {//if we are debugging
-			System.out.println("Output layer index: " + outputIndex);
-		}
 		for (int i = 0; i < this.layers[outputIndex].length; i++) {//loop through all output nodes			
 			double error = this.layers[outputIndex][i].calcError(targets[i]);//calculating the error of the output
 			
 			if (Network.DEBUG) {
-				System.out.println("  Updating weights for node: " + i);
-				System.out.println("    Error: " + error);
+				//System.out.println("  Updating weights for node: " + i);
+				//System.out.println("    Error: " + error);
 			}
 			for (int j = 0; j < this.layers[outputIndex][i].numWeights(); j++) {//for each weight of output node
 				//i is the node, j is the weight of the node
 				double prevNodeOutput = this.layers[outputIndex-1][j].getOutput();//get the output of the jth node on the previous layer
+				if (Network.DEBUG) {
+					System.out.println("prevLayer: " + (outputIndex-1) + " node: " + j + ", output: " + prevNodeOutput);
+				}
 				this.layers[outputIndex][i].updateWeight(j, error, prevNodeOutput);
 				if (Network.DEBUG) {
-					System.out.println("    Delta W[output][" + i + "][" + j +"]: " + this.learningRate*error*prevNodeOutput);
+					//System.out.println("    Delta W[output][" + i + "][" + j +"]: " + this.learningRate*error*prevNodeOutput);
 				}
 			}
 			//update bias weight
 			int biasWeightIndex = this.layers[outputIndex][i].numWeights();
 			this.layers[outputIndex][i].updateWeight(biasWeightIndex, error, 1);
 		}
-		System.out.println("Finished updating output layer weights");
+		
 		if (Network.DEBUG) {
 			for (int i = 0; i < this.layers[outputIndex].length; i++) {//loop through all output layer nodes
 				System.out.println("New output layer weights: " + Network.arrayToString(this.layers[outputIndex][i].getWeights()));//print out their weights
@@ -95,16 +100,17 @@ public class Network {
 			}
 			for (int nodeIndex = 0; nodeIndex < this.layers[layerIndex].length; nodeIndex++) {//for each node on layer
 				if (Network.DEBUG) {
-					System.out.println("  Node[" + nodeIndex + "]:");
+					//System.out.println("  Node[" + nodeIndex + "]:");
 				}
+				
 				//calculate error of middle node
 				double error = 0;
 				if (Network.DEBUG) {
-					System.out.println("    Next layer length: " + this.layers[layerIndex+1].length);
+					//System.out.println("    Next layer length: " + this.layers[layerIndex+1].length);
 				}
 				for (int nextLayerNode = 0; nextLayerNode < this.layers[layerIndex+1].length; nextLayerNode++) {//loop for each node in the next layer
 					if (Network.DEBUG) {
-						System.out.println("      NL_Node[" + nextLayerNode + "]:");
+						//System.out.println("      NL_Node[" + nextLayerNode + "]:");
 					}
 					error += this.layers[layerIndex+1][nextLayerNode].getError() * this.layers[layerIndex+1][nextLayerNode].getWeight(nodeIndex);//error of next node * weight connecting these two nodes
 				}
@@ -119,10 +125,16 @@ public class Network {
 					double prevNodeOutput=0;
 					if (layerIndex == 0) {//first layer
 						prevNodeOutput = this.inputs[weightIndex];//the prevNode was an input
+						if (Network.DEBUG) {
+							System.out.println("prevLayer: input " + " node: " + weightIndex + ", output: " + prevNodeOutput);
+						}
 					}
 					else {
 						prevNodeOutput = this.layers[layerIndex-1][weightIndex].getOutput();//grab previous layer node output
-					}					
+						if (Network.DEBUG) {
+							System.out.println("prevLayer: " + (layerIndex-1) + " node: " + weightIndex + ", output: " + prevNodeOutput);
+						}
+					}						
 					this.layers[layerIndex][nodeIndex].updateWeight(weightIndex, error, prevNodeOutput);
 				}
 				//update bias weight
@@ -134,7 +146,7 @@ public class Network {
 				}
 			}
 		}
-		System.out.println("Finished updating middle layer weights");
+		
 	}
 	
 	public static String arrayToString(double[] array) {
@@ -149,13 +161,12 @@ public class Network {
 	public String toString() {
 		String result = "";
 		for (int layers = 0; layers < this.layers.length; layers++) {
-			result += "Layer[" + layers + "]:\n";
+			result += "Layer[" + layers + "] (" + this.layers[layers].length + " nodes):\n";
 			for (int nodes = 0; nodes < this.layers[layers].length; nodes++) {
 				result += "  node[" + nodes + "]:\n";
 				result += "    weights:" + Network.arrayToString(this.layers[layers][nodes].getWeights()) + "\n";				
 			}
 		}
-		
 		return result;
 	}
 	

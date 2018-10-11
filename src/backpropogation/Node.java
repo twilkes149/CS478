@@ -17,7 +17,7 @@ public class Node {
 	public Node(int numInputs, Random r) {
 		this.weights = new double[numInputs+1];
 		this.numInputs = numInputs;
-		this.setWeights(1);
+		this.setWeights(r);//set all weights to 1
 	}
 	
 	public void setLearningRate(double rate) {
@@ -29,7 +29,7 @@ public class Node {
 		this.rand = r;
 		//set all weights
 		for (int i = 0; i < this.numInputs; i++) {
-			this.weights[i] = this.rand.nextDouble();//set random weight
+			this.weights[i] = this.rand.nextDouble()/10;//set random weight, divide by 10 to get a small number
 		}
 		this.weights[this.numInputs] = 1;//set bias weight
 	}
@@ -83,7 +83,7 @@ public class Node {
 		this.net = 0;//init net
 		
 		for (int i = 0; i < this.inputs.length; i++) {//create linear combination of weights and inputs
-			this.net += this.inputs[i] * this.weights[i];
+			this.net += (this.inputs[i] * this.weights[i]);
 		}
 		this.net += 1*this.weights[this.numInputs];//adding bias
 		return this.net;
@@ -107,17 +107,17 @@ public class Node {
 	}
 	
 	//calculate the error or this node if it's a middle layer node
-	public double calcError(double[] nextNodeError, double[] weights) throws Exception {
-		if (nextNodeError.length != weights.length) {
-			throw new Exception("Erros and weights must be same length");
-		}
-		this.error = this.sigmoidPrime(this.net);
-		for (int i = 0; i < weights.length; i++) {
-			this.error *= weights[i]*nextNodeError[i];
-		}
-		
-		return this.error;
-	}
+//	public double calcError(double[] nextNodeError, double[] weights) throws Exception {
+//		if (nextNodeError.length != weights.length) {
+//			throw new Exception("Erros and weights must be same length");
+//		}
+//		this.error = this.sigmoidPrime(this.net);
+//		for (int i = 0; i < weights.length; i++) {
+//			this.error *= weights[i]*nextNodeError[i];
+//		}
+//		
+//		return this.error;
+//	}
 	
 	/**
 	 * Updates one weight in this node

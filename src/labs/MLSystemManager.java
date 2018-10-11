@@ -5,6 +5,9 @@
 package labs;
 
 import java.util.Random;
+
+import backpropogation.BackProp;
+
 import java.io.File;
 
 public class MLSystemManager {
@@ -16,7 +19,7 @@ public class MLSystemManager {
 	{
 		if (model.equals("baseline")) return new BaselineLearner();
 		else if (model.equals("perceptron")) return new Perceptron(rand);
-		// else if (model.equals("neuralnet")) return new NeuralNet(rand);
+		 else if (model.equals("neuralnet")) return new BackProp(rand);
 		// else if (model.equals("decisiontree")) return new DecisionTree();
 		// else if (model.equals("knn")) return new InstanceBasedLearner();
 		else throw new Exception("Unrecognized model: " + model);
@@ -60,7 +63,7 @@ public class MLSystemManager {
 		System.out.println();
 
 		if (evalMethod.equals("training"))
-		{
+		{			
 			System.out.println("Calculating accuracy on training set...");
 			Matrix features = new Matrix(data, 0, 0, data.rows(), data.cols() - 1);
 			Matrix labels = new Matrix(data, 0, data.cols() - 1, data.rows(), 1);			
@@ -76,6 +79,8 @@ public class MLSystemManager {
 				confusion.print();
 				System.out.println("\n");
 			}
+			
+			//System.out.println("Network: " + learner.toString());
 		}
 		else if (evalMethod.equals("static"))
 		{
