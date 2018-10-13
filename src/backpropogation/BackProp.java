@@ -12,6 +12,7 @@ public class BackProp extends SupervisedLearner {
 	private double[] accuracyList;//used to track the accuracy of each epoch
 	private int lookBack;//number of epochs to compare accuracy to check for stall
 	private double stalledAccuracy; //if accuracy doesn't improve by this much over <lookBack> epoch's then we've stalled
+	private double validationSetPercent;
 	private Random rand;	
 	private double learningRate;
 	
@@ -30,6 +31,7 @@ public class BackProp extends SupervisedLearner {
 		this.accuracyList = new double[maxEpoch];//keep a list of accuracy of each epoch
 		this.layers = 3;	
 		this.learningRate = .1;
+		this.validationSetPercent = .3;
 		this.network = null;
 		
 		this.setNodesPerLayer(null);
@@ -102,30 +104,40 @@ public class BackProp extends SupervisedLearner {
 
 	@Override
 	public void train(Matrix features, Matrix labels) throws Exception {
+		//grab validation set
+		int vSetSize = (int) (features.rows()*this.validationSetPercent);
+		int tSetSize = (int) features.rows()-vSetSize;
+		
+		Matrix validation = new Matrix(features, 0, 0,vSetSize,features.cols());
+		Matrix validateLabels = new Matrix(labels, 0, 0,vSetSize,labels.cols());
+		
+		Matrix test = new Matrix(features,vSetSize,0,tSetSize,features.cols());
+		Matrix testLabels = new Matrix(labels,vSetSize,0,tSetSize,labels.cols());
+		
 		//set up stuff	
 		Matrix output = new Matrix();
-		output.setSize(features.rows(), 1);
-		this.outputClasses = labels.countUnique();
-		this.setNodesPerLayer(features.cols());
+		output.setSize(test.rows(), 1);
+		this.outputClasses = testLabels.countUnique();
+		this.setNodesPerLayer(test.cols());
 				
 		System.out.println("Output classes: " + this.outputClasses);
 		
-		this.network = new Network(features.cols(), this.nodesPerLayer, this.rand, this.learningRate);//create the network
+		this.network = new Network(test.cols(), this.nodesPerLayer, this.rand, this.learningRate);//create the network
 		
 		for (int epoch = 0; epoch < this.maxEpoch; epoch++) {//at most go MAX_EPOCH number of times
 			//if (BackProp.DEBUG) {
-				System.out.println("Epoch["+epoch+"]:");
+				//System.out.println("Epoch["+epoch+"]:");
 			//}
-			for (int instance = 0; instance < features.rows(); instance++) {//for all data instances				
-				double[] prediction = this.network.forwardPropogation(features.row(instance));
+			for (int instance = 0; instance < test.rows(); instance++) {//for all data instances				
+				double[] prediction = this.network.forwardPropogation(test.row(instance));
 				if (BackProp.DEBUG) {
-					System.out.println("Input: " + Network.arrayToString(features.row(instance)));
+					System.out.println("Input: " + Network.arrayToString(test.row(instance)));
 					System.out.println("Output: " + Network.arrayToString(prediction));
 					System.out.println("Finished forward prop");
 				}
 				
 				double outputClass = this.interpretOutput(prediction);//get one hot encoding of prediction
-				double targetClass = labels.get(instance, 0);//get target class
+				double targetClass = testLabels.get(instance, 0);//get target class
 				
 				//System.out.println("output: " + outputClass + " target: " + targetClass + " prediction: " + Network.arrayToString(prediction));
 				
@@ -140,7 +152,7 @@ public class BackProp extends SupervisedLearner {
 				this.network.backPropogation(oneHot);//update weights, based on target
 			}//end for all instances
 			
-			double accuracy = this.accuracy(output, labels);
+			double accuracy = this.accuracy(output, testLabels);
 			System.out.println("Epoch["+epoch+"]: Accuracy: " + accuracy);
 			this.accuracyList[epoch] = accuracy;//save the accuracy of this epoch
 			
@@ -151,6 +163,8 @@ public class BackProp extends SupervisedLearner {
 			if (BackProp.DEBUG) {
 				System.out.println("End epoch\n\n");
 			}
+			
+			test.shuffle(this.rand, testLabels);//randomize features after each epoch
 		}	//end for all epochs
 	}
 	

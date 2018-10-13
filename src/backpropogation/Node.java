@@ -13,11 +13,16 @@ public class Node {
 	private Random rand;
 	private double learningRate;
 	private int numInputs;
+	private double momentum;
+	
+	private static final boolean useMomentum = false;//set to true if we use momentum, set to false if we don't want to use momentum
 	
 	public Node(int numInputs, Random r) {
 		this.weights = new double[numInputs+1];
 		this.numInputs = numInputs;
 		this.setWeights(r);//set all weights to 1
+		
+		this.momentum = .00005;
 	}
 	
 	public void setLearningRate(double rate) {
@@ -126,6 +131,11 @@ public class Node {
 	 * @param prevNodeOutput the output of a previous layer node, connected through this weight
 	 */
 	public void updateWeight(int index, double error, double prevNodeOutput) {
-		this.weights[index] += this.learningRate*prevNodeOutput*error;//update the weight	
+		if (Node.useMomentum) {
+			this.weights[index] += this.learningRate*prevNodeOutput*error + this.momentum*this.weights[index];//update the weight
+		}
+		else {
+			this.weights[index] += this.learningRate*prevNodeOutput*error;//update the weight
+		}
 	}
 }
