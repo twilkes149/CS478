@@ -16,6 +16,9 @@ public class BackProp extends SupervisedLearner {
 	private Random rand;	
 	private double learningRate;
 	
+	private double[] testMSE;
+	private double[] valMSE;
+	
 	private static final boolean DEBUG = false;
 	
 	private Network network;
@@ -29,6 +32,9 @@ public class BackProp extends SupervisedLearner {
 		this.lookBack = 5;
 		this.stalledAccuracy = .005;
 		this.accuracyList = new double[maxEpoch];//keep a list of accuracy of each epoch
+		this.testMSE = new double[maxEpoch];
+		this.valMSE = new double[maxEpoch];
+		
 		this.layers = 3;	
 		this.learningRate = .1;
 		this.validationSetPercent = .3;
@@ -152,9 +158,12 @@ public class BackProp extends SupervisedLearner {
 				this.network.backPropogation(oneHot);//update weights, based on target
 			}//end for all instances
 			
-			double accuracy = this.accuracy(output, testLabels);
-			System.out.println("Epoch["+epoch+"]: Accuracy: " + accuracy);
+			double accuracy = this.measureAccuracy(validation, validateLabels, new Matrix());//get accuracy on validation set
+			this.testMSE[epoch] = this.calcMSE(output, testLabels);
+			
+			System.out.println("Epoch["+epoch+"]: Accuracy: " + accuracy + " testMSE: " + this.testMSE[epoch]);
 			this.accuracyList[epoch] = accuracy;//save the accuracy of this epoch
+						
 			
 			if (this.stalled(epoch)) {
 				System.out.println("Accuracy has stopped improving at epoch: " + (epoch+1));
@@ -193,6 +202,14 @@ public class BackProp extends SupervisedLearner {
 			return true;
 		}
 		return false;
+	}
+	
+	public double calcMSE(Matrix output, Matrix targets) {
+		double sum = 0;
+		for (int i = 0; i < output.rows(); i++) {
+			sum += Math.pow(output.get(i, 0) - targets.get(i, 0), 2);//square error
+		}
+		return sum/(2+output.rows());
 	}
 	
 	/** This function will return the accuracy of one pass through the data set
