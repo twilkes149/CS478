@@ -69,6 +69,20 @@ public class Matrix {
 	public void setM_enum_to_str(ArrayList<TreeMap<Integer, String>> m_enum_to_str) {
 		this.m_enum_to_str = m_enum_to_str;
 	}
+	
+	public ArrayList<String> getM_attr_name() {
+		return m_attr_name;
+	}
+
+	public void setM_attr_name(ArrayList<String> m_attr_name) {
+		this.m_attr_name = m_attr_name;
+	}
+
+	public String getAttributeName(int index) {
+		//System.out.print(m_enum_to_str.get(j).get((int)r[j]));
+		
+		return this.m_attr_name.get(index);
+	}
 
 	//this function returns an array where the lenght is the number of unique elements inside that, and each element is how many of that value there is
 	public double[] countUnique(Matrix that, int col) throws Exception {		
@@ -96,10 +110,12 @@ public class Matrix {
 		m[0].setSize(numValues, that.cols());
 		m[0].setM_enum_to_str(that.getM_enum_to_str());
 		m[0].setM_str_to_enum(that.getM_str_to_enum());
+		m[0].setM_attr_name(that.getM_attr_name());
 		
 		m[1].setSize(numValues, 1);
 		m[1].setM_enum_to_str(labels.getM_enum_to_str());
 		m[1].setM_str_to_enum(labels.getM_str_to_enum());
+		m[1].setM_attr_name(labels.getM_attr_name());
 				
 		
 		for (int i = 0, index=0; i < that.rows(); i++) {

@@ -15,6 +15,10 @@ public class Node {
 		this.children = new Node[size];
 	}
 	
+	public Node getChild(int index) {
+		return children[index];
+	}
+	
 	/**
 	 * 
 	 * @param featureCol the column we are currently looking at
