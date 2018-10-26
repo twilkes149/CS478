@@ -15,14 +15,17 @@ public class Node {
 	private int numInputs;
 	private double momentum;
 	
+	double prevChange;
+	
 	private static final boolean useMomentum = false;//set to true if we use momentum, set to false if we don't want to use momentum
 	
 	public Node(int numInputs, Random r) {
 		this.weights = new double[numInputs+1];
 		this.numInputs = numInputs;
 		this.setWeights(r);//set all weights to 1
+		this.prevChange = 0;
 		
-		this.momentum = .00005;
+		this.momentum = .75;
 	}
 	
 	public void setLearningRate(double rate) {
@@ -98,6 +101,7 @@ public class Node {
 	public double calcOutput(double[] inputs_) {
 		double net = this.calcNet(inputs_);
 		this.output = this.sigmoid(net);
+		//System.out.println("net: " + net + " output: " + this.output);
 		return this.output;
 	}
 	
@@ -111,18 +115,6 @@ public class Node {
 		this.error = e;
 	}
 	
-	//calculate the error or this node if it's a middle layer node
-//	public double calcError(double[] nextNodeError, double[] weights) throws Exception {
-//		if (nextNodeError.length != weights.length) {
-//			throw new Exception("Erros and weights must be same length");
-//		}
-//		this.error = this.sigmoidPrime(this.net);
-//		for (int i = 0; i < weights.length; i++) {
-//			this.error *= weights[i]*nextNodeError[i];
-//		}
-//		
-//		return this.error;
-//	}
 	
 	/**
 	 * Updates one weight in this node
@@ -131,11 +123,11 @@ public class Node {
 	 * @param prevNodeOutput the output of a previous layer node, connected through this weight
 	 */
 	public void updateWeight(int index, double error, double prevNodeOutput) {
+		double change = this.learningRate*prevNodeOutput*error;
 		if (Node.useMomentum) {
-			this.weights[index] += this.learningRate*prevNodeOutput*error + this.momentum*this.weights[index];//update the weight
+			change += this.prevChange*this.momentum;			
 		}
-		else {
-			this.weights[index] += this.learningRate*prevNodeOutput*error;//update the weight
-		}
+		this.prevChange = change;
+		this.weights[index] += change;
 	}
 }

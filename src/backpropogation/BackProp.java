@@ -28,7 +28,7 @@ public class BackProp extends SupervisedLearner {
 	
 	public BackProp(Random r) {
 		this.rand = r;
-		this.maxEpoch = 80;
+		this.maxEpoch = 180;
 		this.lookBack = 5;
 		this.stalledAccuracy = .005;
 		this.accuracyList = new double[maxEpoch];//keep a list of accuracy of each epoch
@@ -66,10 +66,18 @@ public class BackProp extends SupervisedLearner {
 	}
 	
 	public void setNodesPerLayer(int numInputs) {
+		//int num = 101;
 		this.nodesPerLayer = new int[2];
-		this.nodesPerLayer[0] = numInputs*2;
-//		this.nodesPerLayer[1] = numInputs*2;
+//		this.nodesPerLayer[0] = numInputs;
+//		for (int i = 1; i < num-1; i++) {
+//			this.nodesPerLayer[i] = numInputs;
+//		}
+//		this.nodesPerLayer[num-1] = this.outputClasses;
+		
+		this.nodesPerLayer[0] = numInputs;
 		this.nodesPerLayer[1] = this.outputClasses;
+		//this.nodesPerLayer[3] = this.outputClasses;
+		//this.nodesPerLayer[4] = this.outputClasses;
 	}
 	
 	/**
@@ -122,6 +130,8 @@ public class BackProp extends SupervisedLearner {
 		
 		//set up stuff	
 		Matrix output = new Matrix();
+		Matrix valOutput = new Matrix();
+		valOutput.setSize(vSetSize, 1);
 		output.setSize(test.rows(), 1);
 		this.outputClasses = testLabels.countUnique();
 		this.setNodesPerLayer(test.cols());
@@ -151,22 +161,34 @@ public class BackProp extends SupervisedLearner {
 				double[] oneHot = this.oneHot(targetClass);//get one hot encoding for target class
 				
 				if (BackProp.DEBUG) {
-					System.out.println("Target class: " + targetClass);
-					System.out.println("One hot target: " + Network.arrayToString(oneHot));
+					System.out.println("Target class: " + targetClass + " Output class: " + outputClass);
+					//System.out.println("One hot target: " + Network.arrayToString(oneHot));
 				}
 				
 				this.network.backPropogation(oneHot);//update weights, based on target
 			}//end for all instances
 			
-			double accuracy = this.measureAccuracy(validation, validateLabels, new Matrix());//get accuracy on validation set
+			Matrix confusion = new Matrix();
+			double accuracy = this.measureAccuracy(validation, validateLabels, confusion);//get accuracy on validation set
+			double testAcc = this.measureAccuracy(test, testLabels, null);
 			this.testMSE[epoch] = this.calcMSE(output, testLabels);
 			
-			System.out.println("Epoch["+epoch+"]: Accuracy: " + accuracy + " testMSE: " + this.testMSE[epoch]);
+			//get MSE of validation set			
+			for (int i = 0; i < vSetSize; i++) {
+				double[] buf = new double[1];
+				this.predict(validation.row(i), buf);
+				valOutput.set(i, 0, buf[0]);
+			}
+			this.valMSE[epoch] = this.calcMSE(valOutput, validateLabels);
+			
+			System.out.println("Epoch["+epoch+"]: Validation Accuracy: " + accuracy + " Test accuracy: " + testAcc + " testMSE: " + this.testMSE[epoch] + " valMSE: " + this.valMSE[epoch]);
+			
+			//System.out.println((epoch+1)+ "," + accuracy + "," + testAcc + "," + this.testMSE[epoch] + "," + this.valMSE[epoch]);
 			this.accuracyList[epoch] = accuracy;//save the accuracy of this epoch
 						
 			
 			if (this.stalled(epoch)) {
-				System.out.println("Accuracy has stopped improving at epoch: " + (epoch+1));
+				System.out.println("Accuracy has stopped improving at epoch: " + (epoch+1));				
 				return;
 			}
 			if (BackProp.DEBUG) {

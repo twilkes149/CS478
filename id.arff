@@ -1,0 +1,16 @@
+@relation id3
+@attribute 'meat' {'y', 'n'}
+@attribute 'crust' {'thin', 'deep', 'stuffed'}
+@attribute 'veg' {'y', 'n'}
+@attribute 'Class' {'great', 'bad', 'good'}
+
+@data
+'y', 'thin', 'n', 'great'
+'n', 'deep', 'n', 'bad'
+'n', 'stuffed', 'y', 'good'
+'y', 'stuffed', 'y', 'great'
+'y', 'deep', 'n', 'good'
+'y', 'deep', 'y', 'great'
+'n', 'thin', 'y', 'good'
+'y', 'deep', 'n', 'good'
+'n', 'thin', 'n', 'bad'

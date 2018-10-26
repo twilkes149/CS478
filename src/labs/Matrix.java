@@ -4,13 +4,18 @@
 // ----------------------------------------------------------------
 package labs;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
+
+import backpropogation.Network;
+
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Iterator;
+import java.util.Map;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.lang.Exception;
@@ -49,6 +54,77 @@ public class Matrix {
 		}
 	}
 	
+	public ArrayList<TreeMap<String, Integer>> getM_str_to_enum() {
+		return m_str_to_enum;
+	}
+
+	public void setM_str_to_enum(ArrayList<TreeMap<String, Integer>> m_str_to_enum) {
+		this.m_str_to_enum = m_str_to_enum;
+	}
+
+	public ArrayList<TreeMap<Integer, String>> getM_enum_to_str() {
+		return m_enum_to_str;
+	}
+
+	public void setM_enum_to_str(ArrayList<TreeMap<Integer, String>> m_enum_to_str) {
+		this.m_enum_to_str = m_enum_to_str;
+	}
+
+	//this function returns an array where the lenght is the number of unique elements inside that, and each element is how many of that value there is
+	public double[] countUnique(Matrix that, int col) throws Exception {		
+		HashSet<Double> values = (HashSet<Double>) that.getFeatureValues(that, col);//gets all values for this column
+		int uniqueValues = values.size();
+		double[] valuesCount = new double[uniqueValues];
+				
+		int index = 0;
+		for (Iterator<Double> i = values.iterator(); i.hasNext() && index < uniqueValues; index++) {
+			double temp = i.next();			
+			valuesCount[index] = that.countVal(col, temp);			
+		}
+				
+		//System.out.println("number of each class: " + Network.arrayToString(valuesCount));
+		return valuesCount;
+	}
+	
+	
+	//the first element is the selected features, the second element is the labels to match
+	public Matrix[] select(Matrix that, int col, double value, Matrix labels, int numValues) {		
+		Matrix m[] = {new Matrix(), new Matrix()};
+		
+		
+		//int numValues =that.countVal(col, value); 
+		m[0].setSize(numValues, that.cols());
+		m[0].setM_enum_to_str(that.getM_enum_to_str());
+		m[0].setM_str_to_enum(that.getM_str_to_enum());
+		
+		m[1].setSize(numValues, 1);
+		m[1].setM_enum_to_str(labels.getM_enum_to_str());
+		m[1].setM_str_to_enum(labels.getM_str_to_enum());
+				
+		
+		for (int i = 0, index=0; i < that.rows(); i++) {
+			if (that.get(i, col) == value) {//getting the row and putting it into the new row
+				for (int j = 0; j < m[0].cols(); j++) {
+					m[0].set(index, j, that.get(i, j));//select the data rows					
+				}
+				m[1].set(index, 0, labels.get(i, 0));//select the labels
+				index++;
+			}
+		}		
+		return m;
+	}
+	
+	//returns how many the number of instances were col = value
+	public int countVal(int col, double value) {
+		int count = 0;
+		for (int i = 0; i < this.rows(); i++) {
+			if (this.get(i,col) == value) {
+				count++;
+			}
+		}
+		return count;
+	}
+	
 	//counts how many unique elements are in this array
 	public int countUnique() throws Exception {
 		if (this.cols() != 1) {//we only want to deal with 1 dimensional matrices
@@ -59,6 +135,15 @@ public class Matrix {
 			attributes.add((int) this.get(i, 0));
 		}
 		return attributes.size();
+	}
+	
+	//returns a list of all values of a given column
+	public Set<Double> getFeatureValues(Matrix set, int colIndex) throws Exception {
+		HashSet<Double> values = new HashSet<Double>();
+		for (int i = 0; i < set.rows(); i++) {
+			values.add(set.get(i, colIndex));
+		}
+		return values;
 	}
 
 	// Adds a copy of the specified portion of that matrix to this matrix

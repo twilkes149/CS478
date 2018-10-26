@@ -55,6 +55,7 @@ public class Network {
 				//System.out.println("Layer["+i+"] output: " + Network.arrayToString(layerOutput));
 			//}			
 			layerInput = layerOutput;//set output of this layer as input to next layer
+			//System.out.println("Layer["+i+"] output:" + Network.arrayToString(layerOutput));
 		}
 		
 		return layerInput;//finally return last layer output
