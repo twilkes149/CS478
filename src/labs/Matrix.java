@@ -29,7 +29,7 @@ public class Matrix {
 	ArrayList< TreeMap<String, Integer> > m_str_to_enum;
 	ArrayList< TreeMap<Integer, String> > m_enum_to_str;
 
-	static double MISSING = Double.MAX_VALUE; // representation of missing values in the dataset
+	public static double MISSING = Double.MAX_VALUE; // representation of missing values in the dataset
 
 	// Creates a 0x0 matrix. You should call loadARFF or setSize next.
 	public Matrix() {}
@@ -52,6 +52,10 @@ public class Matrix {
 			m_str_to_enum.add(that.m_str_to_enum.get(colStart + i));
 			m_enum_to_str.add(that.m_enum_to_str.get(colStart + i));
 		}
+	}
+	
+	public int getNumberOfPossibleAttributeValues(int column) {
+		return 0;
 	}
 	
 	public ArrayList<TreeMap<String, Integer>> getM_str_to_enum() {

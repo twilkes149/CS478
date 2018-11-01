@@ -7,6 +7,8 @@ package labs;
 import java.util.Random;
 
 import backpropogation.BackProp;
+import decisionTree.DecisionTree;
+import decisionTree.Node;
 
 import java.io.File;
 
@@ -20,7 +22,7 @@ public class MLSystemManager {
 		if (model.equals("baseline")) return new BaselineLearner();
 		else if (model.equals("perceptron")) return new Perceptron(rand);
 		 else if (model.equals("neuralnet")) return new BackProp(rand);
-		// else if (model.equals("decisiontree")) return new DecisionTree();
+		 else if (model.equals("decisiontree")) return new DecisionTree();
 		// else if (model.equals("knn")) return new InstanceBasedLearner();
 		else throw new Exception("Unrecognized model: " + model);
 	}
@@ -79,8 +81,6 @@ public class MLSystemManager {
 				confusion.print();
 				System.out.println("\n");
 			}
-			
-			//System.out.println("Network: " + learner.toString());
 		}
 		else if (evalMethod.equals("static"))
 		{
