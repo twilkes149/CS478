@@ -12,6 +12,8 @@ public class Node {
 	Matrix[] dataSet;//this is used for prediction
 	private boolean leafNode;
 	
+	private int nodeId; //used for pruning the tree
+	
 	public static final boolean DEBUG = false;
 	
 	public Node() {
@@ -19,17 +21,33 @@ public class Node {
 		leafNode = false;
 		splitIndex = Integer.MAX_VALUE;//THIS USED TO BE MAX INT
 		children = null;
+		this.nodeId = Integer.MAX_VALUE;
+	}
+		
+	public int getNodeId() {
+		return nodeId;
+	}
+
+	public void setNodeId(int nodeId) {
+		this.nodeId = nodeId;
+	}
+
+	public void setLeaf() {
+		this.leafNode = true;		
 	}
 	
-	public void setLeaf() {
-		this.leafNode = true;
+	public void prune() {
+		this.leafNode = true;		
+		//this.splitIndex = Integer.MAX_VALUE;
+		this.children = null;
+		this.nodeId = Integer.MAX_VALUE;
 	}
 	
 	public boolean isLeafNode() {
 		if (this.leafNode) {
 			return true;  
 		}
-		else if (this.children == null){
+		else if (this.children == null) {
 			return true;
 		}
 		else return false;
@@ -151,9 +169,9 @@ public class Node {
 		}
 		labels += "}";
 		
-		if (this.leafNode || this.dataSet == null || this.dataSet[0] == null) {
+		if (this.leafNode || this.dataSet == null || this.dataSet[0] == null || this.children == null) {
 			return "Leaf Node. Data set size: " + this.dataSet[0].rows() + labels;
 		}
-		return "Split on: " + this.dataSet[0].getAttributeName(splitIndex) + ". Dataset size: "  + this.dataSet[0].rows() + labels;
+		return "Split on: " + this.dataSet[0].getAttributeName(splitIndex) + ". NodeId: " + this.nodeId + ". Dataset size: "  + this.dataSet[0].rows() + labels;
 	}
 }

@@ -11,6 +11,23 @@ import labs.SupervisedLearner;
 public class DecisionTree extends SupervisedLearner {
 	private Node root;//the root node for this tree
 	private static final double MISSING = Double.MAX_VALUE;
+	private final boolean PRUNING_DEBUG = false;
+	
+	private double validationSetPercent;
+	
+	private boolean pruning;
+	private int pruningNode;
+	private int nonLeaves;
+	private int skipNodeId;
+	
+	public DecisionTree() {
+		this.validationSetPercent = .1;
+		this.pruning = false;
+		this.pruningNode = 0;
+		this.nonLeaves = 1;
+		
+		this.skipNodeId = Integer.MAX_VALUE;
+	}
 	
 	@Override
 	public void predict(double[] features, double[] labels) throws Exception {
@@ -21,20 +38,22 @@ public class DecisionTree extends SupervisedLearner {
 			}
 		}
 		
-		Node n;		
-		for (n = this.root; !n.isLeafNode();) {
-			//this loop will go until n is a leaf node
+		Node n;	
+		boolean found = false;
+		for (n = this.root; !n.isLeafNode() && !found;) {//this loop will go until n is a leaf node			
 			
 			int splitIndex = n.getSplitIndex();//get the feature to split on			
-			//System.out.print("Split index: " + splitIndex + ", ");
 			int childIndex = (int) features[splitIndex];//get the index of the child
 			
-			//System.out.println("child index: " + childIndex);
-			
-			n = n.getChild(childIndex);
+			if (this.pruning && n.getNodeId() == this.skipNodeId) {//if we are pruning and this is the node to skip it's subtree					
+				found = true;//we found the right node to skip
+				//break;
+			}
+			else {//if we are not pruning, get child like normal
+				n = n.getChild(childIndex);
+			}
 		}
 		
-		//System.out.println("Using node: " + n.toString() + " to predict output");
 		Matrix outputLabels = n.getLabels();
 		if (Node.DEBUG) {
 			System.out.println("using the following matrix to predict output: ");
@@ -46,30 +65,118 @@ public class DecisionTree extends SupervisedLearner {
 	}
 	
 	public void train(Matrix features, Matrix labels) throws Exception {
+		
+		//grab validation set
+		int vSetSize = (int) (features.rows()*this.validationSetPercent);
+		int tSetSize = (int) features.rows()-vSetSize;
+		
+		Matrix validation = new Matrix(features, 0, 0,vSetSize,features.cols());
+		Matrix validateLabels = new Matrix(labels, 0, 0,vSetSize,labels.cols());
+		
+		Matrix test = new Matrix(features,vSetSize,0,tSetSize,features.cols());
+		Matrix testLabels = new Matrix(labels,vSetSize,0,tSetSize,labels.cols());
+		
 		HashSet<Integer> usedAttributes = new HashSet<Integer>();
 		root = new Node();
-		System.out.println("Training");		
+		
+		if (PRUNING_DEBUG)
+			System.out.println("Training");		
 		
 		//take care of missing values
-		for (int r = 0; r < features.rows(); r++) {
-			double[] row = features.row(r);
+		for (int r = 0; r < test.rows(); r++) {
+			double[] row = test.row(r);
 			
 			for (int c = 0; c < row.length; c++) {				
-				double averageValue = features.columnMean(c);//get average value of column
-				if (features.get(r, c) == Matrix.MISSING) {//set missing values to the average value for that column
-					features.set(r, c, averageValue);
+				double averageValue = test.columnMean(c);//get average value of column
+				if (test.get(r, c) == Matrix.MISSING) {//set missing values to the average value for that column
+					test.set(r, c, averageValue);
 				}
 			}
 		}
 		
 		//setting the root to have a dataset
-		Matrix[] data = {features, labels};
+		Matrix[] data = {test, testLabels};
 		this.root.setDataSet(data);//set the node to have the incoming data
 				
-		this.MakeTree(root, features, labels, usedAttributes, 0);
+		this.MakeTree(root, test, testLabels, usedAttributes, 0);
 		
 		if (Node.DEBUG)
 			this.printTree();
+				
+		//********************************* PRUNING ***************************************
+		double accuracy = this.measureAccuracy(validation, validateLabels, null);
+		
+		if (PRUNING_DEBUG)
+			System.out.println("Training set Accuracy_: " + accuracy);
+				
+		this.pruning = true;//set the pruning flag to let the prediction function know to skip the ith node
+		double bestAccuracy = accuracy;//base accuracy is default tree
+		
+		if (PRUNING_DEBUG)
+			System.out.println("Pruning...");
+		
+		boolean pruned = false;
+		int loopTimes = 1;
+		do {
+			pruned = false;
+			int bestNode = Integer.MAX_VALUE;
+			
+			//count the number of non leaves
+			this.nonLeaves = 0;
+			this.getNumNonLeafNodes(root);
+			if (PRUNING_DEBUG)
+				System.out.println("Number of non leaf nodes: " + this.nonLeaves);
+			
+			for (int i = loopTimes; i < this.nonLeaves; i++) {//for each none leaf node
+					
+				this.skipNodeId = i;//node to prune it's subtree
+				double validationAccuracy = this.measureAccuracy(validation, validateLabels, null);
+				
+				if (validationAccuracy >= accuracy && validationAccuracy > bestAccuracy) {//if skipping this node, does at least as well as the original tree && it does better than all other pruned nodes
+					bestAccuracy = validationAccuracy;
+					bestNode = i;
+					pruned = true;
+				}
+				if (PRUNING_DEBUG)
+					System.out.println("Validation accuracy without nonleaf node: " + i + "  = " + validationAccuracy);
+			}
+			
+			if (bestNode != Integer.MAX_VALUE) {//if we have a node to prune
+				this.pruneNode(this.root, bestNode);//prune the best node (start at root to find the node)				
+			}
+			if (PRUNING_DEBUG)
+				System.out.println("New best accuracy: " + bestAccuracy);
+			loopTimes++;
+		} while (pruned == true);
+		this.pruning = false;
+		this.skipNodeId = Integer.MAX_VALUE;
+	}
+	
+	//this function will prune the node with id nodeId
+	private void pruneNode(Node n, int nodeId) {
+		if (n.getNodeId() == nodeId) {
+			if (PRUNING_DEBUG)
+				System.out.println("Pruning node: " + nodeId);			
+			n.prune();//make the node a leaf
+		}
+		else {
+			for (int i = 0; i < n.getNumChildren(); i++) {//loop through each child
+				this.pruneNode(n.getChild(i), nodeId);
+			}
+		}
+	}
+	
+	private void getNumNonLeafNodes(Node n) {		
+		if (!n.isLeafNode()) {//if current node is not a leaf
+			n.setNodeId(this.nonLeaves);//set the nodes id base on the current count of non leaves
+			this.nonLeaves++;//increment ammount of non leaves
+		}
+		
+		for (int i = 0; i < n.getNumChildren(); i++) {
+			if (!n.getChild(i).isLeafNode()) {//if the child is not a leaf node				
+				this.getNumNonLeafNodes(n.getChild(i));				
+			}
+		}
 	}
 	
 	public void MakeTree(Node node, Matrix features, Matrix labels, HashSet<Integer> usedAttributes, int level) throws Exception {
@@ -168,8 +275,10 @@ public class DecisionTree extends SupervisedLearner {
 		System.out.print(layer + ": ");
 		System.out.println(node.toString());
 		
-		for (int i = 0; i < node.getNumChildren(); i++) {
-			printTree(node.getChild(i), layer+1);
+		if (!node.isLeafNode()) {
+			for (int i = 0; i < node.getNumChildren(); i++) {
+				printTree(node.getChild(i), layer+1);
+			}
 		}
 	}
 	

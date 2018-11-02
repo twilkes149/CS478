@@ -81,6 +81,8 @@ public class MLSystemManager {
 				confusion.print();
 				System.out.println("\n");
 			}
+			if (Node.DEBUG)
+				((DecisionTree) (learner)).printTree();
 		}
 		else if (evalMethod.equals("static"))
 		{
@@ -172,7 +174,9 @@ public class MLSystemManager {
 			elapsedTime /= (reps * folds);
 			System.out.println("Average time to train (in seconds): " + elapsedTime / 1000.0);
 			System.out.println("Mean accuracy=" + (sumAccuracy / (reps * folds)));
-		}
+			if (Node.DEBUG)
+				((DecisionTree) (learner)).printTree();
+		}			
 	}
 
 	/**
