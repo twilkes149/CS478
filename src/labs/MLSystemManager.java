@@ -6,6 +6,7 @@ package labs;
 
 import java.util.Random;
 
+import KNN.NearestNeighbor;
 import backpropogation.BackProp;
 import decisionTree.DecisionTree;
 import decisionTree.Node;
@@ -23,7 +24,7 @@ public class MLSystemManager {
 		else if (model.equals("perceptron")) return new Perceptron(rand);
 		 else if (model.equals("neuralnet")) return new BackProp(rand);
 		 else if (model.equals("decisiontree")) return new DecisionTree();
-		// else if (model.equals("knn")) return new InstanceBasedLearner();
+		 else if (model.equals("knn")) return new NearestNeighbor();
 		else throw new Exception("Unrecognized model: " + model);
 	}
 
@@ -81,7 +82,7 @@ public class MLSystemManager {
 				confusion.print();
 				System.out.println("\n");
 			}
-			if (Node.DEBUG)
+			//if (Node.DEBUG)
 				((DecisionTree) (learner)).printTree();
 		}
 		else if (evalMethod.equals("static"))

@@ -14,19 +14,32 @@ public class DecisionTree extends SupervisedLearner {
 	private final boolean PRUNING_DEBUG = false;
 	
 	private double validationSetPercent;
+	private boolean prune;//used to tell if we want to prune tree at the end of making it
 	
-	private boolean pruning;
+	
+	private boolean pruning;//a flag for internal methods to check if we are currently pruning
 	private int pruningNode;
 	private int nonLeaves;
 	private int skipNodeId;
 	
+	private int deepestLevel;
+	private int numNodes;
+	private int numPrunedNodes;
+	private int prunedDeepestLevel;
+	
 	public DecisionTree() {
 		this.validationSetPercent = .1;
 		this.pruning = false;
+		this.prune = true;
 		this.pruningNode = 0;
 		this.nonLeaves = 1;
 		
 		this.skipNodeId = Integer.MAX_VALUE;
+		
+		this.deepestLevel = 0;
+		this.numNodes = 1;
+		this.numPrunedNodes = 0;
+		this.prunedDeepestLevel = 0;
 	}
 	
 	@Override
@@ -46,8 +59,7 @@ public class DecisionTree extends SupervisedLearner {
 			int childIndex = (int) features[splitIndex];//get the index of the child
 			
 			if (this.pruning && n.getNodeId() == this.skipNodeId) {//if we are pruning and this is the node to skip it's subtree					
-				found = true;//we found the right node to skip
-				//break;
+				found = true;//we found the right node to skip				
 			}
 			else {//if we are not pruning, get child like normal
 				n = n.getChild(childIndex);
@@ -76,6 +88,11 @@ public class DecisionTree extends SupervisedLearner {
 		Matrix test = new Matrix(features,vSetSize,0,tSetSize,features.cols());
 		Matrix testLabels = new Matrix(labels,vSetSize,0,tSetSize,labels.cols());
 		
+		if (!this.prune) {
+			test = features;
+			testLabels = labels;
+		}
+		
 		HashSet<Integer> usedAttributes = new HashSet<Integer>();
 		root = new Node();
 		
@@ -103,53 +120,79 @@ public class DecisionTree extends SupervisedLearner {
 		if (Node.DEBUG)
 			this.printTree();
 				
-		//********************************* PRUNING ***************************************
 		double accuracy = this.measureAccuracy(validation, validateLabels, null);
 		
-		if (PRUNING_DEBUG)
-			System.out.println("Training set Accuracy_: " + accuracy);
-				
-		this.pruning = true;//set the pruning flag to let the prediction function know to skip the ith node
-		double bestAccuracy = accuracy;//base accuracy is default tree
+		//if (PRUNING_DEBUG)
+		System.out.println("Training set Accuracy_: " + accuracy);
+		System.out.println("Tree depth: " + this.deepestLevel);
+		System.out.println("Number nodes: " + this.numNodes);
+		//count the number of non leaves		
 		
-		if (PRUNING_DEBUG)
-			System.out.println("Pruning...");
-		
-		boolean pruned = false;
-		int loopTimes = 1;
-		do {
-			pruned = false;
-			int bestNode = Integer.MAX_VALUE;
-			
-			//count the number of non leaves
-			this.nonLeaves = 0;
-			this.getNumNonLeafNodes(root);
-			if (PRUNING_DEBUG)
-				System.out.println("Number of non leaf nodes: " + this.nonLeaves);
-			
-			for (int i = loopTimes; i < this.nonLeaves; i++) {//for each none leaf node
+		//********************************* PRUNING ***************************************
+		if (this.prune) {			
 					
-				this.skipNodeId = i;//node to prune it's subtree
-				double validationAccuracy = this.measureAccuracy(validation, validateLabels, null);
+			this.pruning = true;//set the pruning flag to let the prediction function know to skip the ith node
+			double bestAccuracy = accuracy;//base accuracy is default tree
+			
+			if (PRUNING_DEBUG)
+				System.out.println("Pruning...");
+			
+			boolean pruned = false;
+			int loopTimes = 1;
+			do {
+				pruned = false;
+				int bestNode = Integer.MAX_VALUE;
 				
-				if (validationAccuracy >= accuracy && validationAccuracy > bestAccuracy) {//if skipping this node, does at least as well as the original tree && it does better than all other pruned nodes
-					bestAccuracy = validationAccuracy;
-					bestNode = i;
-					pruned = true;
+				//count the number of non leaves
+				this.nonLeaves = 0;
+				this.getNumNonLeafNodes(root);
+				if (PRUNING_DEBUG)
+					System.out.println("Number of non leaf nodes: " + this.nonLeaves);
+				
+				for (int i = loopTimes; i < this.nonLeaves; i++) {//for each none leaf node
+						
+					this.skipNodeId = i;//node to prune it's subtree
+					double validationAccuracy = this.measureAccuracy(validation, validateLabels, null);
+					
+					if (validationAccuracy >= accuracy && validationAccuracy > bestAccuracy) {//if skipping this node, does at least as well as the original tree && it does better than all other pruned nodes
+						bestAccuracy = validationAccuracy;
+						bestNode = i;
+						pruned = true;
+					}
+					if (PRUNING_DEBUG)
+						System.out.println("Validation accuracy without nonleaf node: " + i + "  = " + validationAccuracy);
+				}
+				
+				if (bestNode != Integer.MAX_VALUE) {//if we have a node to prune
+					this.pruneNode(this.root, bestNode);//prune the best node (start at root to find the node)				
 				}
 				if (PRUNING_DEBUG)
-					System.out.println("Validation accuracy without nonleaf node: " + i + "  = " + validationAccuracy);
+					System.out.println("New best accuracy: " + bestAccuracy);
+				loopTimes++;
+			} while (pruned == true);
+			this.pruning = false;
+			this.skipNodeId = Integer.MAX_VALUE;
+			System.out.println("Number of nodes on pruned tree: " + (this.numNodes - this.numPrunedNodes));
+			this.countDepth(root, 0);
+			System.out.println("Deepest pruned level: " + this.prunedDeepestLevel);
+			System.out.println("Pruned accuracy: " + bestAccuracy);
+		}
+	}
+	
+	public void countDepth(Node n, int level) {
+		if (level > this.prunedDeepestLevel) {
+			this.prunedDeepestLevel = level;
+		}
+		if (n.isLeafNode()) {
+			return;
+		}
+		else {
+			for (int i = 0; i < n.getNumChildren(); i++) {
+				if (!n.getChild(i).isLeafNode()) {//if the child is not a leaf node				
+					this.countDepth(n.getChild(i), level+1);				
+				}
 			}
-			
-			if (bestNode != Integer.MAX_VALUE) {//if we have a node to prune
-				this.pruneNode(this.root, bestNode);//prune the best node (start at root to find the node)				
-			}
-			if (PRUNING_DEBUG)
-				System.out.println("New best accuracy: " + bestAccuracy);
-			loopTimes++;
-		} while (pruned == true);
-		this.pruning = false;
-		this.skipNodeId = Integer.MAX_VALUE;
+		}
 	}
 	
 	//this function will prune the node with id nodeId
@@ -158,6 +201,7 @@ public class DecisionTree extends SupervisedLearner {
 			if (PRUNING_DEBUG)
 				System.out.println("Pruning node: " + nodeId);			
 			n.prune();//make the node a leaf
+			this.numPrunedNodes++;
 		}
 		else {
 			for (int i = 0; i < n.getNumChildren(); i++) {//loop through each child
@@ -203,7 +247,9 @@ public class DecisionTree extends SupervisedLearner {
 				continue;//skip this attribute
 			}
 			
-			double info = node.info(features, attribute, labels);
+			//double info = node.info(features, attribute, labels);
+			double info = -1*node.variance(features, attribute);			
+			
 			if (info < lowestInfo) {
 				lowestIndex = attribute;
 				lowestInfo = info;
@@ -218,6 +264,9 @@ public class DecisionTree extends SupervisedLearner {
 			Matrix[] set = {features, labels};
 			node.setDataSet(set);
 			node.setLeaf();//set the node to be a leaf node
+			if (level > this.deepestLevel) {
+				this.deepestLevel = level;
+			}
 			return;
 		}
 		
@@ -228,6 +277,7 @@ public class DecisionTree extends SupervisedLearner {
 		HashSet<Double> values = (HashSet<Double>) features.getFeatureValues(features, lowestIndex);//get all unique values for this feature
 		//node.setChildrenSize(values.size());//create children nodes = to the number of values the split column has
 		node.setChildrenSize(features.valueCount(lowestIndex));//counts the number of possible values this feature can have
+		this.numNodes += features.valueCount(lowestIndex);
 		node.setSplitIndex(lowestIndex);
 		
 		if (Node.DEBUG)

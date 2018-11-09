@@ -105,6 +105,18 @@ public class Node {
 		}
 		return count/numerator;//return probability
 	}
+	
+	public double variance(Matrix features, int colIndex) {
+		double average = features.columnMean(colIndex);
+		double sum = 0;
+		
+		for (int i = 0; i < features.rows(); i++) {
+			sum += Math.pow(features.get(i, colIndex)-average, 2);
+		}
+		
+		return (sum / features.rows());
+	}
+	
 	/**
 	 * This function implements the attribute info function
 	 * @param features the data set
