@@ -35,6 +35,7 @@ public abstract class SupervisedLearner {
 		int labelValues = labels.valueCount(0);
 		if(labelValues == 0) // If the label is continuous...
 		{
+			System.out.println("Calculating MSE...");
 			// The label is continuous, so measure root mean squared error
 			double[] pred = new double[1];
 			double sse = 0.0;

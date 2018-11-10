@@ -2,7 +2,7 @@ package KNN;
 
 public class Neighbor {
 	private double distance;
-	private int label;
+	private double label;
 	
 	public Neighbor() {
 		this.distance = Double.MAX_VALUE;
@@ -15,10 +15,10 @@ public class Neighbor {
 	public void setDistance(double distance) {
 		this.distance = distance;
 	}
-	public int getLabel() {
+	public double getLabel() {
 		return label;
 	}
-	public void setLabel(int label) {
+	public void setLabel(double label) {
 		this.label = label;
 	}
 	

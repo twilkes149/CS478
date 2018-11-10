@@ -402,6 +402,24 @@ public class Matrix {
 		}
 		return m;
 	}
+	
+	//returns the standard deviation of a column
+	public double columnSD(int col) throws Exception{
+		if (this.valueCount(col) != 0) {
+			throw new Exception("Column must be continuous");
+		}
+		else {
+			double N = this.rows();
+			double mean = this.columnMean(col);
+			
+			double sum = 0;
+			for (int i = 0; i < this.rows(); i++) {
+				sum += Math.pow((this.get(i, col) - mean), 2);
+			}
+			
+			return Math.sqrt(sum/N);
+		}
+	}
 
 	// Returns the most common value in the specified column
 	public double mostCommonValue(int col) {
