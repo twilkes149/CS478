@@ -13,6 +13,9 @@ import java.util.TreeMap;
 import backpropogation.Network;
 
 import java.util.Map.Entry;
+
+import Clustering.Clustering;
+
 import java.util.Random;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,7 +35,9 @@ public class Matrix {
 	public static double MISSING = Double.MAX_VALUE; // representation of missing values in the dataset
 
 	// Creates a 0x0 matrix. You should call loadARFF or setSize next.
-	public Matrix() {}
+	public Matrix() {
+		m_data = new ArrayList< double[] >();
+	}
 
 	// Copies the specified portion of that matrix into this matrix
 	public Matrix(Matrix that, int rowStart, int colStart, int rowCount, int colCount) {
@@ -87,6 +92,65 @@ public class Matrix {
 		
 		return this.m_attr_name.get(index);
 	}
+	
+	//returns the distance from the row at <index> and the instance
+	public double getDistance(double[] instance, double[] instance1) throws Exception{
+		if (instance.length != this.cols() || instance1.length != this.cols()) {
+			throw new Exception("Expected data to have same number of rows");			
+		}
+		double sum = 0;
+		
+		for (int i = Clustering.START; i < instance.length; i++) {//for all columns
+			if (instance[i] == Matrix.MISSING || instance1[i] == Matrix.MISSING) {//if one of the values is missing
+				sum += 1;
+			}
+			else if (this.valueCount(i) != 0) {//if the column is nominal
+				if (instance[i] != instance1[i]) {
+					sum += 1;
+				}
+				else {
+					sum += 0;
+				}
+			}
+			else {//if the column is continuous 
+				sum += Math.pow(instance1[i] - instance[i], 2);				
+			}
+		}
+		if (sum == 0) {
+			return 0;
+		}
+		return Math.sqrt(sum);
+	}
+	
+	//returns the distance from the row at <index> and the instance
+	public double getDistance(int index, double[] instance) throws Exception{
+		if (instance.length != this.cols()) {
+			throw new Exception("Expected data to have same number of rows");			
+		}
+		double sum = 0;
+		
+		for (int i = Clustering.START; i < instance.length; i++) {//for all columns
+			if (instance[i] == Matrix.MISSING || this.get(index, i) == Matrix.MISSING) {//if one of the values is missing
+				sum += 1;
+			}
+			else if (this.valueCount(i) != 0) {//if the column is nominal
+				if (instance[i] != this.get(index, i)) {
+					sum += 1;
+				}
+				else {
+					sum += 0;
+				}
+			}
+			else {//if the column is continuous 
+				sum += Math.pow(this.get(index, i) - instance[i], 2);				
+			}
+		}	
+		if (sum == 0) {
+			return 0;
+		}
+		return Math.sqrt(sum);
+	}
+	
 
 	//this function returns an array where the lenght is the number of unique elements inside that, and each element is how many of that value there is
 	public double[] countUnique(Matrix that, int col) throws Exception {		
@@ -181,6 +245,36 @@ public class Matrix {
 				rowDest[i] = rowSrc[colStart + i];
 			m_data.add(rowDest);
 		}
+	}
+	
+	//adds a single row (data instance) to the matrix
+	public void add(double[] instance) throws Exception{
+		if (instance.length > this.cols()) {
+			throw new Exception("expected new instance to have same number of cols");
+		}
+		
+		this.m_data.add(instance);//add the dataset
+	}
+	
+	//removes an element at index
+	public double[] remove(int index) {		
+		return this.m_data.remove(index);
+	}
+	
+	//returns a new matrix that is an exact copy of this one
+	public Matrix deepCopy() {
+		Matrix m = new Matrix();
+		
+		m.setSize(this.rows(), this.cols());
+		
+		//make the copy
+		for (int r = 0; r < this.rows(); r++) {
+			for (int c = 0; c < this.cols(); c++) {
+				m.set(r, c, this.get(r, c));
+			}
+		}
+		
+		return m;
 	}
 
 	// Resizes this matrix (and sets all attributes to be continuous)
@@ -335,6 +429,23 @@ public class Matrix {
 	// 0=continuous, 2=binary, 3=trinary, etc.
 	public int valueCount(int col) { return m_enum_to_str.get(col).size(); }
 
+	public String rowToString(double[] instance) {
+		String result = "";
+		for (int i = 0; i < instance.length; i++) {
+			if (instance[i] == Matrix.MISSING) {
+				result += "?,";
+			}
+			else if (this.valueCount(i) == 0) {
+				result += instance[i] + ",";
+			}
+			else {
+				result += this.attrValue(i, (int) instance[i]) + ",";
+			}
+		}
+		
+		return result;
+	}
+	
 	// Shuffles the row order
 	public void shuffle(Random rand) {
 		for(int n = rows(); n > 0; n--) {
@@ -371,6 +482,9 @@ public class Matrix {
 				sum += v;
 				count++;
 			}
+		}
+		if (count == 0) {
+			return MISSING;
 		}
 		return sum / count;
 	}
@@ -437,6 +551,7 @@ public class Matrix {
 		}
 		int maxCount = 0;
 		double val = MISSING;
+		
 		Iterator< Entry<Double, Integer> > it = tm.entrySet().iterator();
 		while(it.hasNext())
 		{
@@ -444,6 +559,9 @@ public class Matrix {
 			if(e.getValue() > maxCount)
 			{
 				maxCount = e.getValue();
+				val = e.getKey();
+			}
+			else if (e.getValue() == maxCount && e.getKey() < val) {
 				val = e.getKey();
 			}
 		}

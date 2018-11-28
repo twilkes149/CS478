@@ -1,5 +1,8 @@
 package KNN;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import backpropogation.Network;
 import decisionTree.Node;
 import labs.Matrix;
@@ -14,6 +17,9 @@ public class NearestNeighbor extends SupervisedLearner {
 	private int freq; //used if we are only keeping a subset of the training features	
 	Matrix features, labels; //used to save the dataset
 	
+	Set<Integer> skip;
+
+	
 	public static final boolean DEBUG = false;
 	public static final boolean DISTANCE_DEBUG = false;
 	public static final boolean LOOP_DEBUG = false;
@@ -22,11 +28,13 @@ public class NearestNeighbor extends SupervisedLearner {
 	
 	public NearestNeighbor() {
 		this.useDistanceWeighting = false;
-		this.hetogeneous = true;
-		this.regression = true;
-		this.k = 3;
+		this.hetogeneous = false;
+		this.regression = false;
+		this.k = 5;
 		this.neighbors = new Neighbor[this.k];//a list of the k nearest neighbors
 		this.freq = 1;//keep every instance in features		
+		
+		this.skip = new HashSet<Integer>();
 	}
 
 	@Override
@@ -94,6 +102,9 @@ public class NearestNeighbor extends SupervisedLearner {
 		double distance = 0;
 		if (!this.hetogeneous) {//if the dataset is homogeneous (only linear attributes)
 			for (int col = 0; col < this.features.cols(); col++) {//calculate the distance from this instance
+				if (this.skip.contains(col)) {
+					continue;
+				}
 				distance += Math.abs(features[col] - this.features.get(instance, col));
 			}
 		}
@@ -206,19 +217,19 @@ public class NearestNeighbor extends SupervisedLearner {
 		else {
 			double denominator = 0, numerator = 0;
 			for (int j = 0; j < this.k; j++) {//for each neighbor
-				denominator += 1 / (this.neighbors[j].getDistance());
+				denominator += (1.0 / (Math.pow(this.neighbors[j].getDistance(), 2) ));
 			}
 			
 			
 			for (int i = 0; i < numberOfOutputClasses; i++) {//for each output class
 				numerator = 0;
 				for (int j = 0; j < this.k; j++) {//for each neighbor
-					if (this.neighbors[j].getLabel() == i) {//if the neighbor's output class == the current class we are looking at
-						numerator += 1/(this.neighbors[j].getDistance());
+					if ((int) this.neighbors[j].getLabel() == i) {//if the neighbor's output class == the current class we are looking at
+						numerator += (1.0/(Math.pow(this.neighbors[j].getDistance(),2)));
 					}
 				}
 				
-				outputClasses[i] += numerator/denominator;
+				outputClasses[i] += (numerator/denominator);
 			}
 		}
 		
@@ -234,5 +245,29 @@ public class NearestNeighbor extends SupervisedLearner {
 			System.out.println("Predicting class: " + indexClass);
 		}
 		labels[0] = indexClass;//predict the class
+	}
+	
+	public void personalExperiment(int attributes, Matrix testFeatures, Matrix testLabels) throws Exception {		
+		System.out.println("Starting experiment: ");
+		//attributes = 5;
+		for (int skipNum = 1; skipNum < attributes; skipNum++) {//for all values of columns to skip
+			System.out.println("Skipping " + skipNum + " attributes");
+			for (int start = 0; start < attributes; start++) {				//for all columns
+				for (int index = start, i = 0; i < skipNum; index++, i++) {	//increment the index to skip				
+					if (index >= attributes) {
+						index = 0;
+					}				
+					this.skip.add(index);//add the index to skip					
+				}					
+				
+				System.out.print("skipping: " + this.skip);
+				//double accuracy = this.measureAccuracy(testFeatures, testLabels, null);
+				//System.out.println(", Accuracy: " + accuracy);
+				System.out.println();
+				this.skip.clear();
+			}	
+			System.out.println();
+		}
+				
 	}
 }

@@ -6,6 +6,7 @@ package labs;
 
 import java.util.Random;
 
+import Clustering.Clustering;
 import KNN.NearestNeighbor;
 import backpropogation.BackProp;
 import decisionTree.DecisionTree;
@@ -42,10 +43,7 @@ public class MLSystemManager {
 		String evalMethod = parser.getEvaluation(); //Evaluation method specified by the user
 		String evalParameter = parser.getEvalParameter(); //Evaluation parameters specified by the user
 		boolean printConfusionMatrix = parser.getVerbose();
-		boolean normalize = parser.getNormalize();
-
-		// Load the model
-		SupervisedLearner learner = getLearner(learnerName, rand);
+		boolean normalize = parser.getNormalize();		
 
 		// Load the ARFF file
 		Matrix data = new Matrix();
@@ -55,6 +53,7 @@ public class MLSystemManager {
 			System.out.println("Using normalized data\n");
 			data.normalize();
 		}
+				
 
 		// Print some stats
 		System.out.println();
@@ -64,6 +63,25 @@ public class MLSystemManager {
 		System.out.println("Learning algorithm: " + learnerName);
 		System.out.println("Evaluation method: " + evalMethod);
 		System.out.println();
+		
+		boolean debugClustering = true;
+		
+		if (debugClustering) {
+			data = new Matrix(data, 0, 1, data.rows(), data.cols()-2);
+		}
+		
+		// Load the model
+		SupervisedLearner learner = null;
+		if (learnerName.equals("cluster")) {
+			Clustering learn = new Clustering(5, data);
+			learn.train();
+			System.out.println("Done generating clusters");
+			System.out.println(learn.toString());
+			return;
+		}
+		else {
+			learner = getLearner(learnerName, rand);
+		}
 
 		if (evalMethod.equals("training"))
 		{			
@@ -106,12 +124,17 @@ public class MLSystemManager {
 			Matrix testFeatures = new Matrix(testData, 0, 0, testData.rows(), testData.cols() - 1);
 			Matrix testLabels = new Matrix(testData, 0, testData.cols() - 1, testData.rows(), 1);
 			Matrix confusion = new Matrix();
-			double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, confusion);
+			double testAccuracy = learner.measureAccuracy(testFeatures, testLabels, confusion);			
+			
 			System.out.println("Test set accuracy: " + testAccuracy);
 			if(printConfusionMatrix) {
 				System.out.println("\nConfusion matrix: (Row=target value, Col=predicted value)");
 				confusion.print();
 				System.out.println("\n");
+			}
+			
+			if (learnerName.equals("knn")) {				
+				((NearestNeighbor) learner).personalExperiment(data.cols(), testFeatures, testLabels);//launch personal experiment for knn model
 			}
 		}
 		else if (evalMethod.equals("random"))
