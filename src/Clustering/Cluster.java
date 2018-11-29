@@ -80,4 +80,44 @@ public class Cluster {
 		}			
 		return sum;
 	}
+	
+	//This function returns the average distance of the instance at <index> to each other point in this cluster
+	private double getAverageSeparation(int index) throws Exception {
+		double sum = 0;		
+				
+		for (int j = 0; j < this.numInstances(); j++) {//for every other instance in the dataset							
+			if (index == j) {
+				continue;
+			}
+			sum += this.data.getDistance(this.data.row(index), this.data.row(j));//get distance between two instances
+		}
+		
+		return sum/this.numInstances();
+	}
+	
+	//calculates the average distance from an instance at <index> to every point in the given cluster
+	private double getAverageDistance(int index, Cluster c) throws Exception {
+		double sum = 0;
+		
+		for (int i = 0; i < c.numInstances(); i++) {//for all instances in the given cluster
+			sum += this.data.getDistance(this.data.row(index), c.get(i));//calc distance betwen curr point and point in given cluster
+		}
+		
+		return sum/c.numInstances();
+	}
+	
+	//calculates the silhouette for the cluster compared against the given cluster
+	public double calcSilhouette(Cluster c) throws Exception {
+		double sum = 0;
+		
+		for (int i = 0; i < this.numInstances(); i++) {//for each instance
+			//get a silhouette score for each instance and total it
+			double a = this.getAverageSeparation(i);
+			double b = this.getAverageDistance(i, c);
+			
+			sum += ((b-a) / Math.max(a, b));			
+		}
+		
+		return sum/this.numInstances();//return the average silhouette score for this cluster
+	}
 }

@@ -67,13 +67,13 @@ public class MLSystemManager {
 		boolean debugClustering = true;
 		
 		if (debugClustering) {
-			data = new Matrix(data, 0, 1, data.rows(), data.cols()-2);
+			data = new Matrix(data, 0, 0, data.rows(), data.cols());
 		}
 		
 		// Load the model
 		SupervisedLearner learner = null;
 		if (learnerName.equals("cluster")) {
-			Clustering learn = new Clustering(5, data);
+			Clustering learn = new Clustering(7, data);//create 4 clusters
 			learn.train();
 			System.out.println("Done generating clusters");
 			System.out.println(learn.toString());

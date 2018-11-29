@@ -21,7 +21,7 @@ public class Clustering {
 	
 	public Clustering(int k_, Matrix data_) throws Exception {
 		this.k = k_;
-		this.useInit = true;
+		this.useInit = false;
 		this.maxEpoch = 200;//max number of iterations to refine the clusters
 		this.clusters = new Cluster[this.k];//generate k empty clusters
 		
@@ -38,6 +38,7 @@ public class Clustering {
 		String test = "";
 		this.data = data_;
 		Random rand = new Random();
+		rand.setSeed(System.currentTimeMillis());
 		
 		for (int i = 0; i < this.k; i++) {//grab k random data instances to be the initial centroids
 			
@@ -70,6 +71,25 @@ public class Clustering {
 			System.out.println(test);
 		}
 		
+	}
+	
+	//returns the index of the closest cluster to the cluster at <cluster>
+	private int findNearestCluster(int cluster) throws Exception {
+		int nearestIndex = cluster;
+		double nearestDistance = Double.MAX_VALUE;
+		
+		for (int i = 0; i < this.k; i++) {
+			if (i == cluster) {//skip calculating distance for this cluster
+				continue;
+			}
+			double distance = this.data.getDistance(this.clusters[i].getCentroid(), this.clusters[cluster].getCentroid());//calc distance between the two centroids
+			
+			if (distance < nearestDistance) {//update new nearest distance if this centroid is closer than previous
+				nearestDistance = distance;
+				nearestIndex = i;
+			}
+		}
+		return nearestIndex;
 	}
 	
 	//makes one pass over the data to refine the cluster
@@ -158,12 +178,28 @@ public class Clustering {
 		for (int i = 0; i < this.k; i++) {
 			result += "\n  Cluster ["+ i +"]: Size: " + this.clusters[i].numInstances() + " Centroid " + ": " + this.data.rowToString(this.clusters[i].getCentroid());
 			try {
-				sum += this.clusters[i].getSSE();
+				double sse = this.clusters[i].getSSE();
+				sum += sse;
+				result += "\n   cluster SSE: " + sse;
+				result += "\n   silhouette: " + this.clusters[i].calcSilhouette(this.clusters[this.findNearestCluster(i)]);
 			} catch (Exception e) {				
 				e.printStackTrace();
 			}
 		}
 		result += "\nSSE: " + sum;
+		
+		//get silhouette score for each cluster
+		double sSum = 0;
+		try {
+			for (int i = 0; i < this.k; i++) {			
+				Cluster c = this.clusters[this.findNearestCluster(i)];//find the closest cluster that is not this cluster
+				sSum += this.clusters[i].calcSilhouette(c);			
+			}
+			result += "\nSilhouette: " + sSum/this.k;
+		}
+		catch (Exception e) {
+			result += "\nSilhouette: error";
+		}
 		return result;
 		
 	}
